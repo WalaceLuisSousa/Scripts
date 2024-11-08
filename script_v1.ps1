@@ -3,19 +3,28 @@
 ###############
 
 ###############
-###FUNCTIONS###t
+###FUNCTIONS###
 ###############
 
-functionar criaTarefa {
-
+function CriaTarefa {
     $scriptPath = "${SYSTEMROOT}\Temp\script_v1.ps1"
     $taskName = "checarProgresso"
-    $taskDescription = "Tarefa para checar progresso do script pos formatação"
-    $trigger = New-ScheduledTaskTrigger -AtStartup
-    $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$scriptPath`""
-    Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskName -Description $taskDescription -RunLevel Highest
+    $taskDescription = "Tarefa para checar progresso do script pós-formatação"
 
+    $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+    if ($existingTask) {
+        Write-Host "A tarefa '$taskName' já existe."
+    } else {
+       
+        $trigger = New-ScheduledTaskTrigger -AtStartup
+        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-File `"$scriptPath`""
+
+        Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $taskName -Description $taskDescription -RunLevel Highest -User "SYSTEM"
+        Write-Host "A tarefa '$taskName' foi criada com sucesso."
+    }
 }
+
 
 function VerificarLog {
     $caminhoLog = "${SYSTEMROOT}\Temp\pws.log"
@@ -36,9 +45,11 @@ function VerificarLog {
         $valorLog = Get-Content -Path $caminhoLog
         
         # Compara o valor lido com 7
-        if ($valorLog -eq "7") {
-            Write-Host "Valor encontrado: 7. Finalizando execução."
-            #finalizar a tarefa
+        if ($valorLog -eq "6") {
+            Write-Host "Valor encontrado: 6. Finalizando execução."
+            #mata a tarefa
+            Unregister-ScheduledTask -TaskName "checarProgresso" -Confirm: $false
+            Get-ScheduledTask -TaskName "checarProgresso"
             return
         } else {
             Write-Host "valor contido no arquivo ainda nao e o valor final. Continuando execução...."
@@ -54,7 +65,7 @@ function VerificarLog {
 function InstalaAppx {
 
     Add-AppProvisionedPackage -Online -PackagePath "${SystemRoot}\Windows\Setup\MSTeams-x64.msix" -SkipLicense;
-    Set-Content -Path "C:\Temp\pws.log" -Value "1" ### 2= Instalação dos appx/msi ###
+    Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "1" 
 
 }
 
@@ -76,11 +87,11 @@ function InstalaVPN{
         Write-Output "Dispositivo não é um notebook. Programa não será instalado."
 
          }
-    Set-Content -Path "C:\Temp\pws.log" -Value "3" ### 3= instalação da VPN ###
+    Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "2" 
 
 }
 
-function selecionaFabricante {
+function SelecionaFabricante {
 
     $fab = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -Property Manufacturer;
     echo $fab;
@@ -95,7 +106,7 @@ function selecionaFabricante {
     Copy-Item "${SYSTEMROOT}\Windows\Setup\Files\dellupdate.exe" -Destination "${SYSTEMROOT}\Temp"
     echo "dell";
     }
-    Set-Content -Path "C:\Temp\pws.log" -Value "4" ### 4= deixar o dellUpdate x lenovoUpdate na temp ###
+   Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "3" 
 }
 
 function RemoveInstaladores {
@@ -107,7 +118,7 @@ function RemoveInstaladores {
     Remove-Item -Path "${SYSTEMROOT}\Windows\Setup\Files\Appload Setup.exe";
     Remove-Item -Path "${SYSTEMROOT}\Windows\Setup\Files\setupneto32.exe"
     Remove-Item -Path "${SYSTEMROOT}\Windows\Setup\Files\USB Drivers Installer OPL9728.exe"
-    Set-Content -Path "C:\Temp\pws.log" -Value "7" ### 7= caso value igual a 7 script finalizado ###
+    Set-Content -Path "C:\Temp\pws.log" -Value "6" ### 7= caso value igual a 7 script finalizado ###
 
 }
 
@@ -149,7 +160,7 @@ function AdicionaAreadetrabalho {
             Write-Output "A pasta MSTeams não foi encontrada em $basePath."
 
         }
-        Set-Content -Path "C:\Temp\pws.log" -Value "5" ### 5= adicionar o teams na area de trabalho ###
+        Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "4" 
 }
 
 function InstalaColetor {
@@ -185,17 +196,32 @@ function InstalaColetor {
 
         }
     }
-    Set-Content -Path "C:\Temp\pws.log" -Value "6" ### 6= instalação de driver e aplicativos coletor###
+    Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "5" 
+}
+
+function VerificaEtapa {
+
+    $day = Get-Content "${SystemRoot}\Temp\pws.log"
+    switch ($day) {
+    0 { InstalaAppx }
+    1 { InstalaVPN }
+    2 { SelecionaFabricante }
+    3 { AdicionaAreadetrabalho }
+    4 { InstalaColetor }
+    5 { RemoveInsaladores }
+    }
+
 }
 
 #######################
 #####CHAMARFUNÇÕES#####
 #######################
 
+CriaTarefa 
 VerificarLog
-InstalaAppx
-InstalaVPN
-selecionaFabricante
-AdicionaAreadetrabalho
-InstalaColetor
-RemoveInstaladores
+InstalaAppx #0
+InstalaVPN #1
+SelecionaFabricante #2
+AdicionaAreadetrabalho #3
+InstalaColetor #4
+RemoveInstaladores #5
