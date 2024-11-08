@@ -17,7 +17,7 @@ function CriaTarefa {
     $taskName = "checarProgresso"
     $taskDescription = "Tarefa para checar progresso do script pós-formatação"
 
-    $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction
 
     if ($existingTask) {
         Write-Host "A tarefa '$taskName' já existe."
