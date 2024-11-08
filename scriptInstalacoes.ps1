@@ -7,7 +7,13 @@
 ###############
 
 function CriaTarefa {
-    $scriptPath = "${SYSTEMROOT}\Temp\script_v1.ps1"
+    $nomeArquivo = "scriptInstalacoes.ps1"
+    $scriptPath = "${SYSTEMROOT}\Windows\Setup\$nomeArquivo"
+   
+    if (!(Test-Path $scriptPath)) {
+        Copy-Item "${SYSTEMROOT}\Windows\Setup\FilesU\$nomeArquivo" -Destination "${SYSTEMROOT}\Windows\Setup\$nomeArquivo"
+    }
+
     $taskName = "checarProgresso"
     $taskDescription = "Tarefa para checar progresso do script pós-formatação"
 
@@ -15,7 +21,8 @@ function CriaTarefa {
 
     if ($existingTask) {
         Write-Host "A tarefa '$taskName' já existe."
-    } else {
+    }
+    else {
        
         $trigger = New-ScheduledTaskTrigger -AtStartup
         $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-File `"$scriptPath`""
@@ -33,7 +40,8 @@ function VerificarLog {
     if (Test-Path $caminhoTemp) {
         Write-Host "Pasta Temp não encontrada. Criando a pasta..."
         New-Item -Path $caminhoTemp -ItemType Directory -Force
-    } else {
+    }
+    else {
         Write-Host "Pasta Temp já existe."
     }
 
@@ -49,12 +57,16 @@ function VerificarLog {
             Write-Host "Valor encontrado: 6. Finalizando execução."
             #mata a tarefa
             Unregister-ScheduledTask -TaskName "checarProgresso" -Confirm: $false
-            Get-ScheduledTask -TaskName "checarProgresso"
-            return
-        } else {
+            Remove-Item -Path "$caminhoLog"
+            exit
+            
+        }
+       
+        else {
             Write-Host "valor contido no arquivo ainda nao e o valor final. Continuando execução...."
         }
-    } else {
+    }
+    else {
         Write-Host "Arquivo de log não encontrado."
         New-Item -Path $caminhoLog -ItemType File -Force
         Set-Content -Path $caminhoLog -Value "0" ### adicionar o valor 0 no arquivo###
@@ -69,7 +81,7 @@ function InstalaAppx {
 
 }
 
-function InstalaVPN{
+function InstalaVPN {
 
     $bateria = Get-WmiObject -Class Win32_Battery
 
@@ -86,7 +98,7 @@ function InstalaVPN{
 
         Write-Output "Dispositivo não é um notebook. Programa não será instalado."
 
-         }
+    }
     Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "2" 
 
 }
@@ -97,16 +109,16 @@ function SelecionaFabricante {
     echo $fab;
     $fabL = $fab.Manufacturer.ToLower();
 
-    if($fabL.Contains("lenovo")){
-    Copy-Item "${SYSTEMROOT}\Windows\Setup\Files\lenovoupdate.exe" -Destination "${SYSTEMROOT}\Temp"
-    echo "lenovo";
+    if ($fabL.Contains("lenovo")) {
+        Copy-Item "${SYSTEMROOT}\Windows\Setup\Files\lenovoupdate.exe" -Destination "${SYSTEMROOT}\Temp"
+        echo "lenovo";
     }
 
-    elseif($fabL.Contains("dell")){
-    Copy-Item "${SYSTEMROOT}\Windows\Setup\Files\dellupdate.exe" -Destination "${SYSTEMROOT}\Temp"
-    echo "dell";
+    elseif ($fabL.Contains("dell")) {
+        Copy-Item "${SYSTEMROOT}\Windows\Setup\Files\dellupdate.exe" -Destination "${SYSTEMROOT}\Temp"
+        echo "dell";
     }
-   Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "3" 
+    Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "3" 
 }
 
 function RemoveInstaladores {
@@ -154,43 +166,43 @@ function AdicionaAreadetrabalho {
         $shortcut.Save()
 
         Write-Output "Atalho criado em: $shortcutPath"
-        }
-        else {
+    }
+    else {
 
-            Write-Output "A pasta MSTeams não foi encontrada em $basePath."
+        Write-Output "A pasta MSTeams não foi encontrada em $basePath."
 
-        }
-        Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "4" 
+    }
+    Set-Content -Path "${SYSTEMROOT}\Temp\pws.log" -Value "4" 
 }
 
 function InstalaColetor {
 
     Write-Output "UTILITÁRIO DE INSTALAÇÃO DE PROGRAMAS PARA LOJA (APPLOAD) (NET032) E DRIVERS"
-    $op=0
+    $op = 0
 
-    while($op -ne 1){
-      $op = Read-Host 'DIGITE "1" PARA INSTALAR OU "0" PARA CANCELAR';
-        if($op -eq 1){
+    while ($op -ne 1) {
+        $op = Read-Host 'DIGITE "1" PARA INSTALAR OU "0" PARA CANCELAR';
+        if ($op -eq 1) {
 
-             $installerPath = "${SystemRoot}\Windows\Setup\Files\USB Drivers Installer OPL9728.exe"
-             Start-Process -FilePath $installerPath -Wait
-             Write-Output "Instalação concluída Drivers."
+            $installerPath = "${SystemRoot}\Windows\Setup\Files\USB Drivers Installer OPL9728.exe"
+            Start-Process -FilePath $installerPath -Wait
+            Write-Output "Instalação concluída Drivers."
              
-             $installerPath = "${SystemRoot}\Windows\Setup\Files\Appload Setup.exe"
-             Start-Process -FilePath $installerPath -Wait
-             Write-Output "Instalação concluída Appload." 
+            $installerPath = "${SystemRoot}\Windows\Setup\Files\Appload Setup.exe"
+            Start-Process -FilePath $installerPath -Wait
+            Write-Output "Instalação concluída Appload." 
              
-             $installerPath = "${SystemRoot}\Windows\Setup\Files\setupneto32.exe"
-             Start-Process -FilePath $installerPath -Wait
-             Write-Output "Instalação concluída Neto32."           
+            $installerPath = "${SystemRoot}\Windows\Setup\Files\setupneto32.exe"
+            Start-Process -FilePath $installerPath -Wait
+            Write-Output "Instalação concluída Neto32."           
 
         } 
-        elseif($op -eq 0){
+        elseif ($op -eq 0) {
 
-            $op=1;
+            $op = 1;
 
         }
-        else{
+        else {
 
             Write-Output "Por favor digitar um numero valido, 1 ou 0!!";
 
@@ -203,12 +215,12 @@ function VerificaEtapa {
 
     $day = Get-Content "${SystemRoot}\Temp\pws.log"
     switch ($day) {
-    0 { InstalaAppx }
-    1 { InstalaVPN }
-    2 { SelecionaFabricante }
-    3 { AdicionaAreadetrabalho }
-    4 { InstalaColetor }
-    5 { RemoveInsaladores }
+        0 { InstalaAppx }
+        1 { InstalaVPN }
+        2 { SelecionaFabricante }
+        3 { AdicionaAreadetrabalho }
+        4 { InstalaColetor }
+        5 { RemoveInsaladores }
     }
 
 }
