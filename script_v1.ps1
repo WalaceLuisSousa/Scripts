@@ -56,8 +56,8 @@ function VerificarLog {
         }
     } else {
         Write-Host "Arquivo de log não encontrado."
-        New-Item -Path "${SYSTEMROOT}\Temp\pws.log" -ItemType File -Force
-        Set-Content -Path "C:\Temp\pws.log" -Value "0" ### adicionar o valor 0 no arquivo###
+        New-Item -Path $caminhoLog -ItemType File -Force
+        Set-Content -Path $caminhoLog -Value "0" ### adicionar o valor 0 no arquivo###
         #cria tarefa
     }
 }
