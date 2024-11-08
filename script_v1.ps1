@@ -3,7 +3,7 @@
 ###############
 
 ###############
-###FUNCTIONS###
+###FUNCTIONS###t
 ###############
 
 functionar criaTarefa {
